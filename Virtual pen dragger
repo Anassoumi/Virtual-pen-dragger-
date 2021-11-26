@@ -1,0 +1,95 @@
+import cv2
+import numpy as np
+
+xPos = 0
+yPos = 0
+
+
+def onTrack1(val):
+    global hueMin
+    hueMin = val
+    print('hue Min = ', hueMin)
+
+
+def onTrack2(val):
+    global hueMax
+    hueMax = val
+    print('hue Max = ', hueMax)
+
+
+def onTrack3(val):
+    global satMin
+    satMin = val
+    print('sat Min = ', satMin)
+
+
+def onTrack4(val):
+    global satMax
+    satMax = val
+    print('sat Max = ', satMax)
+
+
+def onTrack5(val):
+    global valMin
+    valMin = val
+    print('val Min = ', valMin)
+
+
+def onTrack6(val):
+    global valMax
+    valMax = val
+    print('val Max = ', valMax)
+
+
+width = 1280
+height = 720
+cam = cv2.VideoCapture(0)
+cam.set(3, int(height/3))
+cam.set(4,int(width/2))
+
+cv2.namedWindow('myTrackbars')
+cv2.moveWindow('myTrackbars', width, 0)
+
+hueMin = 74
+hueMax = 163
+satMin = 10
+satMax = 179
+valMin = 10
+valMax = 250
+
+cv2.createTrackbar('Hue min', 'myTrackbars', 10, 179, onTrack1)
+cv2.createTrackbar('Hue max', 'myTrackbars', 20, 179, onTrack2)
+cv2.createTrackbar('Sat min', ' myTrackbars', 10, 255, onTrack3)
+cv2.createTrackbar('Sat max', 'myTrackbars', 10, 179, onTrack4)
+cv2.createTrackbar('Val min', 'myTrackbars', 10, 179, onTrack5)
+cv2.createTrackbar('Val max', 'myTrackbars', 10, 179, onTrack6)
+
+while True:
+    ignore, frame = cam.read()
+
+    frameHSV = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    lowerBound = np.array([hueMin, satMin, valMin])
+    higherBound = np.array([hueMax, satMax, valMax])
+
+    myMask = cv2.inRange(frameHSV, lowerBound, higherBound)
+    myObject = cv2.bitwise_and(frame, frame, mask=myMask)
+
+    contours, junk = cv2.findContours(myMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    # cv2.drawContours(frame, contours, -1, (255, 0, 0), 3)
+    for contour in contours:
+        area = cv2.contourArea(contour)
+        if area > 200:
+            # cv2.drawContours(frame, [contour], 0, (255, 0, 0), 3)
+            x, y, w, h = cv2.boundingRect(contour)
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 3)
+            xPos = int(x)
+            yPos = int(y)
+
+    cv2.imshow('frame', frame)
+    cv2.moveWindow('frame', xPos, yPos)
+    #cv2.imshow('myMask', myMask)
+    #cv2.imshow('myObject', myObject)
+
+    if cv2.waitKey(1) & 0xff == ord('q'):
+        break
